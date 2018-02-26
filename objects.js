@@ -5,8 +5,11 @@ class Rectangle{
 		this.y1 = y1;
 		this.x2 = x2;
 		this.y2 = y2;
-		this.color = color;
 		this.active = false;
+		this.colorize(color);
+	}
+	colorize(color){
+		this.color = color;
 		if(this.color == colorEnum.Red){
 			this.R = 255;
 			this.B = 0;
@@ -51,12 +54,23 @@ class Rectangle{
 class Line{
 	constructor(x1,y1,x2,y2,color = colorEnum.Black){
 		this.type = "line";
-		this.x1 = x1;
-		this.y1 = y1;
-		this.x2 = x2;
-		this.y2 = y2;
-		this.color = color;
+		this.x1 = roundTo5(x1);
+		this.y1 = roundTo5(y1);
+		this.x2 = roundTo5(x2);
+		this.y2 = roundTo5(y2);
 		this.active = false;
+		this.grabbed = false;
+		this.grabP = 0;
+		this.oldV = {
+			x1 : 0,
+			y1 : 0,
+			x2 : 0,
+			y2 : 0
+		}
+		this.colorize(color);
+	}
+	colorize(color){
+		this.color = color;
 		if(this.color == colorEnum.Red){
 			this.R = 255;
 			this.B = 0;
@@ -68,6 +82,50 @@ class Line{
 			this.B = 0;
 		}
 		this.G = 0;
+	}
+	grabPoint(x,y){
+		this.oldV.x1 = this.x1 - x;
+		this.oldV.y1 = this.y1 - y;
+		this.oldV.x2 = this.x2 - x;
+		this.oldV.y2 = this.y2 - y;
+		if(dist(x,y,this.x1,this.y1) < 5){
+			this.grabP = 1;
+			this.grabbed = true;
+			return;
+		}
+		if(dist(x,y,this.x2,this.y2) < 5){
+			this.grabP = 2;
+			this.grabbed = true;
+			return;
+		}
+		var cirkle = new Globe(x,y,5,3);
+		if(this.crash(cirkle)){
+			this.grabP = 3;
+			this.grabbed = true;
+			return;
+		}
+	}
+	grab(x,y){
+		switch(this.grabP){
+			case 1:
+			this.moveP1(x,y);
+			break;
+			case 2:
+			this.moveP2(x,y);
+			break;
+			case 3:
+			this.moveP1(x+this.oldV.x1, y+this.oldV.y1);
+			this.moveP2(x+this.oldV.x2, y+this.oldV.y2);
+			break;
+		}
+	}
+	moveP1(x,y){
+		this.x1 = roundTo5(x);
+		this.y1 = roundTo5(y);
+	}
+	moveP2(x,y){
+		this.x2 = roundTo5(x);
+		this.y2 = roundTo5(y);
 	}
 	draw(){
 		drawLine(this.x1,this.y1,this.x2,this.y2,this.R,this.G,this.B, this.active);
@@ -132,5 +190,14 @@ class startingPoint{
 	}
 	draw(){
 		drawStart(this.x,this.y,this.r, this.active);
+	}
+}
+
+function roundTo5(x){
+	var rem = (x % 5);
+	if(rem < 2.5){
+		return x - (x % 5);
+	}else{
+		return x - (x % 5) + 5;
 	}
 }

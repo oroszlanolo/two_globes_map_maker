@@ -1,3 +1,9 @@
+//TODO: !! RECTANGLE MOVING !!
+//TODO: help lines while grabbing
+//TODO: add grid button for helping grid
+//TODO: Add cirkle to objects
+//TODO: Make the objects objectum oriented
+
 let colorEnum={
 	Red: 0,
 	Blue: 1,
@@ -9,7 +15,39 @@ let toolEnum={
 	Rect: 1,
 	Line: 2,
 	Start: 3,
-	End: 4
+	End: 4,
+	Test: 5
+}
+
+function getColNum(col){
+	var ret;
+	switch(col){
+		case "Red":
+		ret = 0;
+		break;
+		case "Blue":
+		ret = 1;
+		break;
+		case "Black":
+		ret = 2;
+		break;
+	}
+	return ret;
+}
+function colToString(col){
+	var ret;
+	switch(col){
+		case 0:
+		ret = "Red";
+		break;
+		case 1:
+		ret = "Blue";
+		break;
+		case 2:
+		ret = "Black";
+		break;
+	}
+	return ret;
 }
 
 const WIDTH = 800;
@@ -29,11 +67,13 @@ let lineButt;
 let rectButt;
 let startButt;
 let endButt;
+let testButt;
 let printButton;
 let activeButt;
 let deleteButt;
+let selector;
 
-let dummy;
+let myGlobes;
 
 //SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP SETUP
 function setup() {
@@ -43,36 +83,61 @@ function setup() {
 	setupButtons();
 	background(200);
 	drawing = false;
+	myGlobes = new Globes(0,0,50);
 }
 
 function setupButtons(){
 	createP('');
+	//first line
+	var butts = createElement("div");
+	butts.style("padding","5px");
 	moveButt = createButton("Mozgató Eszköz");
 	moveButt.style('background-color','blue');
 	moveButt.style('color','white');
 	moveButt.mouseClicked(CBMove);
+	moveButt.parent(butts);
 	activeButt = moveButt;
 	lineButt = createButton("Szakasz");
 	lineButt.style('background-color','white');
 	lineButt.style('color','black');
 	lineButt.mouseClicked(CBLine);
+	lineButt.parent(butts);
 	rectButt = createButton("Téglalap");
 	rectButt.style('background-color','white');
 	rectButt.style('color','black');
 	rectButt.mouseClicked(CBRect);
+	rectButt.parent(butts);
 	startButt = createButton("Kezdőpont");
 	startButt.style('background-color','white');
 	startButt.style('color','black');
 	startButt.mouseClicked(CBStart);
+	startButt.parent(butts);
 	endButt = createButton("Cél");
 	endButt.style('background-color','white');
 	endButt.style('color','black');
 	endButt.mouseClicked(CBEnd);
+	endButt.parent(butts);
+	testButt = createButton("Teszt");
+	testButt.mouseClicked(CBTest);
+	testButt.style('background-color','white');
+	testButt.style('color','black');
+	testButt.style("margin-left","100px");
+	testButt.parent(butts);
 	createP('');
+	//seconf line
 	deleteButt = createButton("Törlés");
 	deleteButt.mouseClicked(CBDelete);
+	deleteButt.style("margin","5px");
+	selector = createSelect();
+	selector.option("Red");
+	selector.option("Blue");
+	selector.option("Black");
+	selector.changed(CBSelect);
+	selector.style("margin","5px");
 	createP('');
+	//third line
 	printButton = createButton('Nyomtatás');
+	printButton.style("margin","5px");
 	printButton.mouseClicked(CBPrint);
 }
 
@@ -82,18 +147,24 @@ function draw() {
 	if(drawing){
 		switch(currentTool){
 			case toolEnum.Line:
-			currentObj.x2 = mouseX;
-			currentObj.y2 = mouseY;
+			currentObj.moveP2(mouseX,mouseY);
+			drawHelpLines();
 			break;
 			case toolEnum.Rect:
 			currentObj.x2 = mouseX;
 			currentObj.y2 = mouseY;
+			drawHelpLines();
 			break;
 			case toolEnum.Start:
 			myStart.r = dist(myStart.x,myStart.y,mouseX,mouseY);
 			break;
 			case toolEnum.End:
 			myEnd.r = dist(myEnd.x,myEnd.y,mouseX,mouseY);
+			break;
+			case toolEnum.Move:
+			if(currentObj && currentObj.grabbed){
+				currentObj.grab(mouseX,mouseY);
+			}
 			break;
 		}
 	}
@@ -104,6 +175,24 @@ function draw() {
 	if(myEnd != null){
 		myEnd.draw();
 	}
+	if(currentTool == toolEnum.Test){
+		if(mouseIsPressed){
+			myGlobes.mini();
+		}else{
+			myGlobes.maxi();
+		}
+		myGlobes.move(mouseX,mouseY);
+		myGlobes.draw();
+	}
+}
+
+function drawHelpLines(){
+	stroke(160,160,160,200);
+	line(0,currentObj.y1,width,currentObj.y1);
+	line(currentObj.x1,0,currentObj.x1,height);
+	stroke(160,160,160,100);
+	line(currentObj.x1-1000,currentObj.y1+1000,currentObj.x1+1000,currentObj.y1-1000);
+	line(currentObj.x1-1000,currentObj.y1-1000,currentObj.x1+1000,currentObj.y1+1000);
 }
 
 function isCrashed(){
@@ -127,11 +216,11 @@ function mousePressed(){
 	}
 	switch(currentTool){
 		case toolEnum.Line:
-		currentObj = new Line(mouseX,mouseY,mouseX,mouseY);
+		currentObj = new Line(mouseX,mouseY,mouseX,mouseY,getColNum(selector.selected()));
 		level.push(currentObj);
 		break;
 		case toolEnum.Rect:
-		currentObj = new Rectangle(mouseX,mouseY,mouseX,mouseY);
+		currentObj = new Rectangle(mouseX,mouseY,mouseX,mouseY,getColNum(selector.selected()));
 		level.push(currentObj);
 		break;
 		case toolEnum.Start:
@@ -144,7 +233,9 @@ function mousePressed(){
 		if(!isSelected){
 			isSelected = selectOut();
 		}else{
-			if(!currentObj.crash(new Globe(mouseX,mouseY,5,3))){
+			if(currentObj.crash(new Globe(mouseX,mouseY,5,3))){
+				currentObj.grabPoint(mouseX,mouseY);
+			}else{
 				isSelected = selectOut();
 			}
 
@@ -155,6 +246,9 @@ function mousePressed(){
 }
 function mouseReleased(){
 	drawing = false;
+	if(currentObj){
+		currentObj.grabbed = false;
+	}
 }
 
 function selectOut(){
@@ -174,6 +268,7 @@ function selectOut(){
 		if(tmp.crash(cirkle)){
 			currentObj = tmp;
 			currentObj.active = true;
+			selector.value(colToString(currentObj.color));
 			return true;
 		}
 	}
@@ -191,49 +286,42 @@ function deselect(){
 //callbacks
 function CBMove(){
 	deselect();
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  moveButt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
+	buttonActivater(moveButt);
 	currentTool = toolEnum.Move;
 }
 function CBLine(){
 	deselect();
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  lineButt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
+	buttonActivater(lineButt);
 	currentTool = toolEnum.Line;
 }
 function CBRect(){
 	deselect();
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  rectButt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
+	buttonActivater(rectButt);
 	currentTool = toolEnum.Rect;
 }
 function CBStart(){
 	deselect();
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  startButt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
+	buttonActivater(startButt);
 	currentTool = toolEnum.Start;
 }
 function CBEnd(){
 	deselect();
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  endButt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
+	buttonActivater(endButt);
 	currentTool = toolEnum.End;
 }
+function CBTest(){
+	deselect();
+	buttonActivater(testButt);
+	currentTool = toolEnum.Test;
+}
+function buttonActivater(butt){
+	activeButt.style('background-color','white');
+	activeButt.style('color','black');
+	activeButt =  butt;
+	activeButt.style('background-color','blue');
+	activeButt.style('color','white');
+}
+
 function CBPrint(){
 
 	var json = {};
@@ -265,22 +353,7 @@ function CBPrint(){
 	}
 	saveJSON(json, "savedLevel.json");
 }
-function printOut(obj){
-	switch(obj.constructor){
-		case Line:
-		print("level.push(new Line(" + obj.x1 + "," + obj.y1 + "," + obj.x2 + "," + obj.y2 + "));");
-		break;
-		case Rectangle:
-		print("level.push(new Rectangle(" + obj.x1 + "," + obj.y1 + "," + obj.x2 + "," + obj.y2 + "));");
-		break;
-		case startingPoint:
-		print("myStart = new startingPoint(" + obj.x + "," + obj.y + "," + obj.r +  ");");
-		break;
-		case EndPoint:
-		print("myEnd = new EndPoint(" + obj.x + "," + obj.y + "," + obj.r +  ");");
-		break;
-	}
-}
+
 function CBDelete(){
 	for(var i = level.length - 1; i >= 0; i--){
 		if(level[i].active){
@@ -293,6 +366,14 @@ function CBDelete(){
 	}
 	if(myEnd && myEnd.active){
 		myEnd = null;
+	}
+}
+
+function CBSelect(myObj){
+	print(selector.selected());
+	if(isSelected){
+		var col = getColNum(selector.selected());
+		currentObj.colorize(col);
 	}
 }
 
