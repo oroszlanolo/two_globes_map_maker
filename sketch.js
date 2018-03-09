@@ -1,8 +1,4 @@
-//TODO: !! RECTANGLE MOVING !!
 //TODO: help lines while grabbing
-//TODO: add grid button for helping grid
-//TODO: Add cirkle to objects
-//TODO: Make the objects objectum oriented
 
 let colorEnum={
 	Red: 0,
@@ -14,9 +10,10 @@ let toolEnum={
 	Move: 0,
 	Rect: 1,
 	Line: 2,
-	Start: 3,
-	End: 4,
-	Test: 5
+	Cirk: 3,
+	Start: 4,
+	End: 5,
+	Test: 6
 }
 
 function getColNum(col){
@@ -50,28 +47,20 @@ function colToString(col){
 	return ret;
 }
 
-const WIDTH = 800;
+const WIDTH = 840;
 const HEIGHT = 600;
 
 let level = [];
 let myEnd;
 let myStart;
+var levelData;
 
 let currentTool;
 let currentObj;
-let drawing;
+let mouseDown;
 let isSelected;
 
-let moveButt;
-let lineButt;
-let rectButt;
-let startButt;
-let endButt;
-let testButt;
-let printButton;
-let activeButt;
-let deleteButt;
-let selector;
+
 
 let myGlobes;
 
@@ -79,87 +68,37 @@ let myGlobes;
 function setup() {
 	currentTool = 0;
 	isSelected = false;
-	createCanvas(WIDTH,HEIGHT);
+	var canv = createCanvas(WIDTH,HEIGHT);
+	canv.drop(CBLoad);
 	setupButtons();
 	background(200);
-	drawing = false;
-	myGlobes = new Globes(0,0,50);
+	addBorder();
+	mouseDown = false;
+	myGlobes = new Globes(0,0,40);
 }
 
-function setupButtons(){
-	createP('');
-	//first line
-	var butts = createElement("div");
-	butts.style("padding","5px");
-	moveButt = createButton("Mozgató Eszköz");
-	moveButt.style('background-color','blue');
-	moveButt.style('color','white');
-	moveButt.mouseClicked(CBMove);
-	moveButt.parent(butts);
-	activeButt = moveButt;
-	lineButt = createButton("Szakasz");
-	lineButt.style('background-color','white');
-	lineButt.style('color','black');
-	lineButt.mouseClicked(CBLine);
-	lineButt.parent(butts);
-	rectButt = createButton("Téglalap");
-	rectButt.style('background-color','white');
-	rectButt.style('color','black');
-	rectButt.mouseClicked(CBRect);
-	rectButt.parent(butts);
-	startButt = createButton("Kezdőpont");
-	startButt.style('background-color','white');
-	startButt.style('color','black');
-	startButt.mouseClicked(CBStart);
-	startButt.parent(butts);
-	endButt = createButton("Cél");
-	endButt.style('background-color','white');
-	endButt.style('color','black');
-	endButt.mouseClicked(CBEnd);
-	endButt.parent(butts);
-	testButt = createButton("Teszt");
-	testButt.mouseClicked(CBTest);
-	testButt.style('background-color','white');
-	testButt.style('color','black');
-	testButt.style("margin-left","100px");
-	testButt.parent(butts);
-	createP('');
-	//seconf line
-	deleteButt = createButton("Törlés");
-	deleteButt.mouseClicked(CBDelete);
-	deleteButt.style("margin","5px");
-	selector = createSelect();
-	selector.option("Red");
-	selector.option("Blue");
-	selector.option("Black");
-	selector.changed(CBSelect);
-	selector.style("margin","5px");
-	createP('');
-	//third line
-	printButton = createButton('Nyomtatás');
-	printButton.style("margin","5px");
-	printButton.mouseClicked(CBPrint);
-}
 
 //DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
 function draw() {
-	background(200);
-	if(drawing){
+	background(220);
+	if(mouseDown){
 		switch(currentTool){
 			case toolEnum.Line:
 			currentObj.moveP2(mouseX,mouseY);
 			drawHelpLines();
 			break;
 			case toolEnum.Rect:
-			currentObj.x2 = mouseX;
-			currentObj.y2 = mouseY;
+			currentObj.moveP2(mouseX,mouseY);
 			drawHelpLines();
 			break;
+			case toolEnum.Cirk:
+			currentObj.setR(dist(currentObj.x,currentObj.y,mouseX,mouseY));
+			break;
 			case toolEnum.Start:
-			myStart.r = dist(myStart.x,myStart.y,mouseX,mouseY);
+			myStart.setR(dist(myStart.x,myStart.y,mouseX,mouseY));
 			break;
 			case toolEnum.End:
-			myEnd.r = dist(myEnd.x,myEnd.y,mouseX,mouseY);
+			myEnd.setR(dist(myEnd.x,myEnd.y,mouseX,mouseY));
 			break;
 			case toolEnum.Move:
 			if(currentObj && currentObj.grabbed){
@@ -167,6 +106,9 @@ function draw() {
 			}
 			break;
 		}
+	}
+	if(netCheckBox.checked()){
+		drawNet();
 	}
 	drawObjects();
 	if(myStart != null){
@@ -176,28 +118,75 @@ function draw() {
 		myEnd.draw();
 	}
 	if(currentTool == toolEnum.Test){
-		if(mouseIsPressed){
-			myGlobes.mini();
-		}else{
-			myGlobes.maxi();
-		}
-		myGlobes.move(mouseX,mouseY);
-		myGlobes.draw();
+		drawTest();
+	}
+}
+
+function drawTest(){
+	if(mouseIsPressed){
+		myGlobes.mini();
+	}else{
+		myGlobes.maxi();
+	}
+	myGlobes.move(mouseX,mouseY);
+	myGlobes.draw();
+	if(isCrashed()){
+		background(255,0,0,60);
+	}
+}
+
+function drawNet(){
+	stroke(160,160,160,200);
+	for(var i = 120; i < width; i += 120){
+		line(i,0,i,height);
+	}
+	for(var i = 120; i < height; i += 120){
+		line(0,i,width,i);
+	}
+	stroke(160,160,160,100);
+	for(var i = 60; i < width; i += 120){
+		line(i,0,i,height);
+	}
+	for(var i = 60; i < height; i += 120){
+		line(0,i,width,i);
 	}
 }
 
 function drawHelpLines(){
-	stroke(160,160,160,200);
-	line(0,currentObj.y1,width,currentObj.y1);
-	line(currentObj.x1,0,currentObj.x1,height);
-	stroke(160,160,160,100);
-	line(currentObj.x1-1000,currentObj.y1+1000,currentObj.x1+1000,currentObj.y1-1000);
-	line(currentObj.x1-1000,currentObj.y1-1000,currentObj.x1+1000,currentObj.y1+1000);
+	var x1 = currentObj.x1;
+	var x2 = currentObj.x2;
+	var y1 = currentObj.y1;
+	var y2 = currentObj.y2;
+	stroke(160,70,160,200);
+	line(0,y1,width,y1);
+	line(x1,0,x1,height);
+	stroke(160,70,160,80);
+	line(x1-1000,y1+1000,x1+1000,y1-1000);
+	line(x1-1000,y1-1000,x1+1000,y1+1000);
+	
+	for(var i = x1 - 840; i < x1 + 840; i += 120){
+		line(i,y1-5,i,y1+5);
+	}
+	for(var i = x1 - 780; i < x1 + 840; i += 120){
+		line(i,y1-3,i,y1+3);
+	}
+	for(var i = y1 - 600; i < y1 + 600; i += 120){
+		line(x1-5,i,x1+5,i);
+	}
+	for(var i = y1 - 540; i < y1 + 600; i += 120){
+		line(x1-3,i,x1+3,i);
+	}
+
+	stroke(160,70,160,80);
+	strokeWeight(0.5);
+	line(0,y2,width,y2);
+	line(x2,0,x2,height);
+	strokeWeight(1);
 }
 
 function isCrashed(){
 	for(let obj of level){
-		if(obj.crash(myGlobe.red) || obj.crash(myGlobe.blue)){
+		if(obj.crash(myGlobes.red) || obj.crash(myGlobes.blue)){
 			return true;
 		}
 	}
@@ -223,6 +212,10 @@ function mousePressed(){
 		currentObj = new Rectangle(mouseX,mouseY,mouseX,mouseY,getColNum(selector.selected()));
 		level.push(currentObj);
 		break;
+		case toolEnum.Cirk:
+		currentObj = new Cirkle(mouseX,mouseY,0,getColNum(selector.selected()));
+		level.push(currentObj);
+		break;
 		case toolEnum.Start:
 		myStart = new startingPoint(mouseX,mouseY,0);
 		break;
@@ -242,10 +235,10 @@ function mousePressed(){
 		}
 
 	}
-	drawing = true;
+	mouseDown = true;
 }
 function mouseReleased(){
-	drawing = false;
+	mouseDown = false;
 	if(currentObj){
 		currentObj.grabbed = false;
 	}
@@ -283,110 +276,24 @@ function deselect(){
 }
 
 
-//callbacks
-function CBMove(){
-	deselect();
-	buttonActivater(moveButt);
-	currentTool = toolEnum.Move;
-}
-function CBLine(){
-	deselect();
-	buttonActivater(lineButt);
-	currentTool = toolEnum.Line;
-}
-function CBRect(){
-	deselect();
-	buttonActivater(rectButt);
-	currentTool = toolEnum.Rect;
-}
-function CBStart(){
-	deselect();
-	buttonActivater(startButt);
-	currentTool = toolEnum.Start;
-}
-function CBEnd(){
-	deselect();
-	buttonActivater(endButt);
-	currentTool = toolEnum.End;
-}
-function CBTest(){
-	deselect();
-	buttonActivater(testButt);
-	currentTool = toolEnum.Test;
-}
-function buttonActivater(butt){
-	activeButt.style('background-color','white');
-	activeButt.style('color','black');
-	activeButt =  butt;
-	activeButt.style('background-color','blue');
-	activeButt.style('color','white');
-}
 
-function CBPrint(){
+//mouseDown functions
 
-	var json = {};
-	json.level = 0;
-	if(myStart){
-		json.start = {
-			x : myStart.x,
-			y : myStart.y,
-			r : myStart.r
-		}
-	}
-	if(myEnd){
-		json.end = {
-			x : myEnd.x,
-			y : myEnd.y,
-			r : myEnd.r
-		}
-	}
-	json.objects = [];
-	for(var i = 0; i < level.length; i++){
-		json.objects[i] = {
-			type : level[i].type,
-			x1 : level[i].x1,
-			y1 : level[i].y1,
-			x2 : level[i].x2,
-			y2 : level[i].y2,
-			color : level[i].color
-		}
-	}
-	saveJSON(json, "savedLevel.json");
-}
-
-function CBDelete(){
-	for(var i = level.length - 1; i >= 0; i--){
-		if(level[i].active){
-			level.splice(i,1);
-			isSelected = false;
-		}
-	}
-	if(myStart && myStart.active){
-		myStart = null;
-	}
-	if(myEnd && myEnd.active){
-		myEnd = null;
-	}
-}
-
-function CBSelect(myObj){
-	print(selector.selected());
-	if(isSelected){
-		var col = getColNum(selector.selected());
-		currentObj.colorize(col);
-	}
-}
-
-//Drawing functions
-
-function drawCirkle(x,y,r,R,G,B, active){
+function drawCirkle(x,y,r,R,G,B, active, tt){
 	stroke(R,G,B);
 	if(active){
-		fill(0,255,0);
+		fill(0,255,0,100);
 	}else{
-		fill(R,G,B);
+		fill(R,G,B,100);
 	}
 	ellipse(x,y,2*r);
+	if(tt){
+		stroke(0,0,0);
+		fill(0,0,0);
+		textAlign(CENTER,CENTER);
+		textSize(r/2);
+		text(tt,x,y);
+	}
 }
 function drawRect(x1,y1,x2,y2,R,G,B, active){
 	stroke(R,G,B);
@@ -399,21 +306,14 @@ function drawRect(x1,y1,x2,y2,R,G,B, active){
 }
 
 function drawLine(x1,y1,x2,y2,R,G,B, active){
+	strokeWeight(1.5);
 	if(active){
 		stroke(R,128,B);
 	}else{
 		stroke(R,G,B);
 	}
 	line(x1,y1,x2,y2);
-}
-function drawStart(x,y,r, active){
-	stroke(100,100,100,100);
-	if(active){
-		fill(255,255,128);
-	}else{
-		fill(255,255,255);
-	}
-	ellipse(x,y,2*r);
+	strokeWeight(1);
 }
 
 function drawNextLevel(){
