@@ -163,13 +163,23 @@ function CBPrint(){
 	}
 	json.objects = [];
 	for(var i = 0; i < level.length; i++){
-		json.objects[i] = {
-			type : level[i].type,
-			x1 : level[i].x1,
-			y1 : level[i].y1,
-			x2 : level[i].x2,
-			y2 : level[i].y2,
-			color : level[i].color
+		if(level[i].type == "cirkle"){
+			json.objects[i] = {
+				type : level[i].type,
+				x : level[i].x,
+				y : level[i].y,
+				r : level[i].r,
+				color : level[i].color
+			}
+		}else{
+			json.objects[i] = {
+				type : level[i].type,
+				x1 : level[i].x1,
+				y1 : level[i].y1,
+				x2 : level[i].x2,
+				y2 : level[i].y2,
+				color : level[i].color
+			}
 		}
 	}
 	var saveName = mapName.value() + ".json";
@@ -229,6 +239,8 @@ function CBLoadObjects(){
 			case "rectangle":
 			loadRect(obs[i]);
 			break;
+			case "cirkle":
+			loadCirkle(obs[i]);
 		}
 	}
 	addBorder();
@@ -240,6 +252,10 @@ function loadLine(ln){
 function loadRect(rt){
     var tmpRect = new Rectangle(rt.x1,rt.y1,rt.x2,rt.y2,rt.color);
     level.push(tmpRect);
+}
+function loadCirkle(cr){
+    var tmpCirk = new Cirkle(cr.x,cr.y,cr.r,cr.color);
+    level.push(tmpCirk);
 }
 function addBorder(){
     level.push(new Line(0,0,0,HEIGHT));
