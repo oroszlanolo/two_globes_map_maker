@@ -53,7 +53,7 @@ const HEIGHT = 600;
 let level = [];
 let myEnd;
 let myStart;
-var levelData;
+// var levelData;
 
 let currentTool;
 let currentObj;
@@ -80,6 +80,15 @@ function setup() {
 
 //DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
 function draw() {
+	if(!myStart || !myEnd){
+		missingPointLabel.show();
+		printButton.style('background-color','red');
+		printButton.style('color','white');
+	}else{
+		missingPointLabel.hide();
+		printButton.style('background-color','white');
+		printButton.style('color','black');
+	}
 	background(220);
 	if(mouseDown){
 		switch(currentTool){

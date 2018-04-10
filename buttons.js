@@ -10,6 +10,7 @@ let activeButt;
 let deleteButt;
 let resetButt;
 
+let missingPointLabel;
 let mapName;
 let selector;
 let netCheckBox;
@@ -24,7 +25,11 @@ function setupButtons(){
     thirdLine();
 	createP('');
     //fourth line
-    fourthLine();
+	fourthLine();
+	missingPointLabel = createP('Nincs kezdőpont vagy végpont létrehozva!');
+	missingPointLabel.style('color','red');
+	missingPointLabel.style("margin","15px");
+	missingPointLabel.hide();
 
 }
 
@@ -90,7 +95,7 @@ function thirdLine(){
 	resetButt.style("margin-left","100px");
 }
 function fourthLine(){
-	mapName = createInput("my_map");
+	mapName = createInput("Pálya neve");
 	mapName.style("margin","5px");
 	printButton = createButton('Nyomtatás');
 	printButton.style("margin","5px");
@@ -145,7 +150,6 @@ function buttonActivater(butt){
 function CBPrint(){
 
 	var json = {};
-	json.level = 0;
 	json.name = mapName.value();
 	if(myStart){
 		json.start = {
@@ -182,9 +186,15 @@ function CBPrint(){
 			}
 		}
 	}
-	var saveName = mapName.value() + ".json";
+	var saveName = "level_" + hashCode(mapName.value()) + ".json";
+	if(!myStart || !myEnd){
+		saveName = "incomplete_" +saveName;
+	}
 	saveJSON(json, saveName);
 }
+function hashCode(s){
+	return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);              
+  }
 
 function CBDelete(){
 	for(var i = level.length - 1; i >= 0; i--){
@@ -216,9 +226,9 @@ function CBReset(){
 }
 
 function CBLoad(file){
-	levelData = loadJSON(file.data,CBLoadObjects);
+	loadJSON(file.data,CBLoadObjects);
 }
-function CBLoadObjects(){
+function CBLoadObjects(levelData){
 	var sPoint = levelData.start;
 	if(sPoint){
 		myStart = new startingPoint(sPoint.x,sPoint.y,sPoint.r);
@@ -241,6 +251,7 @@ function CBLoadObjects(){
 			break;
 			case "cirkle":
 			loadCirkle(obs[i]);
+			break;
 		}
 	}
 	addBorder();
